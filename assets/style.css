@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #070d1f;
+  --panel: #00040f;
+  --red: #ff3b3b;
+  --blue: #38b6ff;
+  --purple: #41146a;
+  --log-player: #8a2be2;
+  --log-opponent: #38b6ff;
+  --hp-ok: #00803c;
+  --hp-warn: #c98a00;
+  --hp-low: #c0262d;
+  --muted: #8d97b5;
+}
+
+.stApp, .stApp p, .stApp label, .stApp input, .stApp button, .stApp div[data-testid="stMarkdownContainer"] {
+  font-family: 'Outfit', sans-serif;
+}
+
+.block-container { padding-top: 2.5rem; max-width: 1500px; }
+header[data-testid="stHeader"] { background: transparent; }
+
+/* ---------- sidebar ---------- */
+section[data-testid="stSidebar"] { border-right: 2px solid #0f1c45; width: 340px !important; }
+.side-title { font-size: 3.4rem; font-weight: 300; line-height: 1.2; text-align: center; margin-top: 32vh; }
+.side-label { font-size: 1.3rem; margin-bottom: 1.5rem; }
+.side-name { font-size: 4rem; font-weight: 300; text-align: center; line-height: 1; margin-bottom: 2.5rem; }
+.turn-tag { display: block; font-size: .8rem; color: #1fa855; margin-top: .2rem; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; row-gap: .9rem; text-align: center; font-size: 1.5rem; margin-bottom: 2rem; }
+.state-box { background: var(--panel); border-radius: 6px; padding: 1rem 1.1rem; min-height: 240px; font-size: 1.4rem; }
+.state-box .state-title { margin-bottom: 1.6rem; }
+
+/* ---------- headings / panels ---------- */
+.app-title { font-size: 2.4rem; font-weight: 300; margin-bottom: 1.5rem; }
+.panel { background: var(--panel); border-radius: 6px; padding: 1.2rem 1.4rem; min-height: 260px; }
+.panel-title { font-size: 2rem; margin-bottom: .8rem; }
+.recap-text { color: var(--red); font-size: 1.6rem; text-align: center; padding-top: 2.4rem; }
+.recap-empty { color: var(--muted); font-size: 1.3rem; text-align: center; padding-top: 2.6rem; }
+.log-line { font-size: 1.4rem; line-height: 1.35; margin-bottom: .9rem; }
+.log-line.player { color: var(--log-player); }
+.log-line.opponent { color: var(--log-opponent); }
+.banner { text-align: center; font-size: 1.8rem; margin: .8rem 0; }
+.st-key-logs_panel { background: var(--panel); border: 0; border-radius: 6px; }
+
+/* ---------- fighters ---------- */
+.circle { width: 140px; height: 140px; border-radius: 50%; margin: 0 auto; }
+.circle.red { background: var(--red); }
+.circle.blue { background: var(--blue); }
+.fighter-name { font-size: 3.4rem; text-align: center; margin: .6rem 0 1rem; line-height: 1.1; }
+.hp-row { display: flex; align-items: center; gap: .6rem; font-size: 1.5rem; margin-bottom: 1.2rem; }
+.hp-track { flex: 1; height: 32px; background: #0d1631; }
+.hp-fill { height: 100%; transition: width .4s ease; }
+.hp-fill.ok { background: var(--hp-ok); }
+.hp-fill.warn { background: var(--hp-warn); }
+.hp-fill.low { background: var(--hp-low); }
+
+/* ---------- selection screen ---------- */
+.prompt { font-size: 2rem; text-align: center; margin: 2.2rem 0 1.4rem; }
+.step-note { text-align: center; color: var(--muted); font-size: 1.1rem; margin-top: 1.2rem; }
+.stTextInput input { background: var(--panel); font-size: 1.4rem; padding: 1.2rem 1rem; }
+.stTextInput [data-baseweb="input"], .stTextInput [data-baseweb="base-input"] { background: var(--panel); border: 0; }
+
+/* ---------- buttons ---------- */
+.stButton, .stButton button { width: 100%; }
+.stButton button { border: 0; border-radius: 10px; height: 3.4rem; font-size: 1.3rem; color: #fff; }
+.stButton button:hover { filter: brightness(1.12); color: #fff; }
+.stButton button:disabled { opacity: .4; }
+.st-key-btn_attack button, .st-key-btn_no button, .st-key-btn_exec button { background: var(--red); }
+.st-key-btn_defend button, .st-key-btn_yes button { background: var(--blue); }
+.st-key-btn_tactic button { background: var(--purple); }
+.st-key-btn_again button, .st-key-btn_reset button { background: #16224a; }
