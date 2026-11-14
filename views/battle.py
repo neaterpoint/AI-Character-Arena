@@ -6,11 +6,10 @@ import streamlit as st
 
 from core import engine
 from core.state import reset_game
-from core.ui import FLASK, TROPHY, fighter_card, page_title, stats_grid
+from core.ui import fighter_card, page_title
 from services import ai_client
 
 SELECTION_PAGE = "views/character_selection.py"
-SIDE_HEX = {"player": "#ff3b3b", "opponent": "#38b6ff"}   # fighter 1 = red, fighter 2 = blue
 
 player = st.session_state.player
 opponent = st.session_state.opponent
@@ -44,7 +43,15 @@ if queued is not None:
         else:
             st.session_state.action_count = action_number
             for result in results:
-                st.session_state.logs.append({"side": result.side, "text": result.text})
+                kind = (
+                    "sudden" if result.action == "sudden_death"
+                    else "tactic" if result.action == "tactic"
+                    else "critical" if result.crit
+                    else "normal"
+                )
+                st.session_state.logs.append(
+                    {"side": result.side, "text": result.text, "kind": kind}
+                )
             st.session_state.recap = results[-1].text
             if not opponent.alive:
                 st.session_state.winner = "player"
@@ -59,52 +66,68 @@ focus_side = winner if game_over else st.session_state.turn     # whose card/sta
 focus = player if focus_side == "player" else opponent
 
 
-# ----------------------------- sidebar -----------------------------
-with st.sidebar:
-    turn_tag = "" if game_over else '<span class="turn-tag">Current Turn</span>'
-    st.markdown('<div class="side-label">Character</div>', unsafe_allow_html=True)
+# ----------------------------- main area -----------------------------
+page_title()
+heading, reset = st.columns([5, 1])
+with heading:
     st.markdown(
-        f'<div class="side-name" style="color:{SIDE_HEX[focus_side]}">{html.escape(focus.name)}{turn_tag}</div>',
+        '<div class="screen-heading"><h1>Battle Arena</h1>'
+        '<div class="eyebrow">Match in progress</div></div>',
         unsafe_allow_html=True,
     )
-    st.markdown(stats_grid(focus), unsafe_allow_html=True)
-    st.markdown(
-        '<div class="state-box"><div class="state-title">Character State</div>'
-        f"{html.escape(focus.state)}</div>",
-        unsafe_allow_html=True,
-    )
-    if ai_client.is_mock_mode():
-        st.caption(f"{FLASK} Demo mode: no API key set, responses are simulated.")
-    if st.button("New match", key="btn_reset"):
+with reset:
+    if st.button("New Match", key="btn_reset"):
         reset_game()
         st.switch_page(SELECTION_PAGE)
 
+if ai_client.is_mock_mode():
+    st.caption("DEMO MODE / Responses are simulated without an API key.")
 
-# ----------------------------- main area -----------------------------
-page_title()
-arena_col, logs_col = st.columns([2.3, 1.2], gap="large")
+arena_col, logs_col = st.columns([2.1, 1], gap="large")
 
 with arena_col:
-    left, right = st.columns(2)
+    left, versus, right = st.columns([1, 0.12, 1], gap="small")
     left.markdown(fighter_card(player, "red", active=focus_side == "player"), unsafe_allow_html=True)
+    with versus:
+        st.markdown('<div class="arena-divider">VS</div>', unsafe_allow_html=True)
     right.markdown(fighter_card(opponent, "blue", active=focus_side == "opponent"), unsafe_allow_html=True)
 
     if game_over:
-        banner = f"{TROPHY} {focus.name} wins!"
+        banner = f"<strong>{html.escape(focus.name)}</strong> wins the match"
     else:
         number = min(st.session_state.action_count + 1, engine.MAX_ACTIONS)
-        banner = f"{focus.name}'s turn - action {number} of {engine.MAX_ACTIONS}"
-    st.markdown(f'<div class="banner">{html.escape(banner)}</div>', unsafe_allow_html=True)
+        banner = (
+            f"<strong>{html.escape(focus.name)}</strong> to act / "
+            f"action {number} of {engine.MAX_ACTIONS}"
+        )
+    st.markdown(f'<div class="battle-banner">{banner}</div>', unsafe_allow_html=True)
+    if not game_over and st.session_state.action_count == engine.MAX_ACTIONS - 1:
+        st.markdown(
+            '<div class="sudden-warning">Sudden Death / Action 50 decides the match</div>',
+            unsafe_allow_html=True,
+        )
 
+    fighter_label = "F1" if focus_side == "player" else "F2"
+    st.markdown(
+        f'<div class="action-caption">Fighter {fighter_label[-1]} / Choose your move</div>',
+        unsafe_allow_html=True,
+    )
     atk_col, def_col, tac_col = st.columns(3)
-    atk_col.button("Attack", key="btn_attack", on_click=queue_action, args=("attack",), disabled=game_over)
-    def_col.button("Defend", key="btn_defend", on_click=queue_action, args=("defend",), disabled=game_over)
+    atk_col.button(
+        f"{fighter_label} / Attack", key="btn_attack", on_click=queue_action,
+        args=("attack",), disabled=game_over,
+    )
+    def_col.button(
+        f"{fighter_label} / Defend", key="btn_defend", on_click=queue_action,
+        args=("defend",), disabled=game_over,
+    )
     tac_col.button(
-        "Tactic", key="btn_tactic", on_click=queue_action, args=("tactic",), disabled=game_over,
+        f"{fighter_label} / Tactic", key="btn_tactic", on_click=queue_action,
+        args=("tactic",), disabled=game_over,
         help="A random lore-based move that boosts Atk, Def or Crit chance.",
     )
 
-    if game_over and st.button("Play again", key="btn_again"):
+    if game_over and st.button("Play Again", key="btn_again"):
         reset_game()
         st.switch_page(SELECTION_PAGE)
 
@@ -112,15 +135,33 @@ with arena_col:
     body = (
         f'<div class="recap-text">{html.escape(recap)}</div>'
         if recap
-        else '<div class="recap-empty">Pick an action to start the fight.</div>'
+        else '<div class="recap-empty">Choose an action to start the fight.</div>'
     )
-    st.markdown(f'<div class="panel"><div class="panel-title">Recap</div>{body}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="recap-panel"><div class="recap-heading">Last action</div>{body}</div>',
+        unsafe_allow_html=True,
+    )
 
 with logs_col:
     with st.container(height=640, key="logs_panel"):
-        st.markdown('<div class="panel-title">Battle Logs</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="log-heading">Combat Log<span>{len(st.session_state.logs)} entries</span></div>',
+            unsafe_allow_html=True,
+        )
         for entry in reversed(st.session_state.logs):      # newest first
+            text = entry["text"]
+            lowered = text.lower()
+            kind = entry.get("kind")
+            if kind not in {"normal", "critical", "tactic", "sudden"}:
+                if "sudden death" in lowered:
+                    kind = "sudden"
+                elif "chance +" in lowered or "chance is already at its maximum" in lowered:
+                    kind = "tactic"
+                elif "critical" in lowered or "crit!" in lowered:
+                    kind = "critical"
+                else:
+                    kind = "normal"
             st.markdown(
-                f'<div class="log-line {entry["side"]}">{html.escape(entry["text"])}</div>',
+                f'<div class="log-line {entry["side"]} {kind}">{html.escape(text)}</div>',
                 unsafe_allow_html=True,
             )

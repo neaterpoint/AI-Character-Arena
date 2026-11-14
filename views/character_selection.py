@@ -7,15 +7,11 @@ import html
 
 import streamlit as st
 
-from core.ui import circle, page_title
+from core.ui import page_title
 from services import ai_client
 
 SELECTION_ROLE = st.session_state.select_for          # "player" | "opponent"
-CIRCLE_COLOR = "red" if SELECTION_ROLE == "player" else "blue"
 BATTLE_PAGE = "views/battle.py"
-
-with st.sidebar:
-    st.markdown('<div class="side-title">Character<br>Selection</div>', unsafe_allow_html=True)
 
 
 def _on_submit() -> None:
@@ -82,42 +78,82 @@ if query:
     st.rerun()
 
 page_title()
-_, middle, _ = st.columns([1, 3, 1])
+st.markdown(
+    '<div class="screen-heading"><h1>Select your fighters</h1>'
+    '<div class="eyebrow">Two picks. One arena.</div></div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="selection-board"><div class="eyebrow">Choose your contenders</div></div>',
+    unsafe_allow_html=True,
+)
 
-with middle:
-    st.markdown(f'<div style="margin-top:4rem">{circle(CIRCLE_COLOR)}</div>', unsafe_allow_html=True)
+fighter_one, versus, fighter_two = st.columns([1, 0.14, 1], gap="small")
 
-    candidates = st.session_state.candidates
-    if not candidates:
-        # ---- input state ----
-        st.markdown(
-            '<div class="prompt">Enter a character (you can include the show/game they are from)</div>',
-            unsafe_allow_html=True,
-        )
-        st.text_input(
-            "Character",
-            key="char_input",
-            placeholder="e.g. Steve from Minecraft",
-            max_chars=80,
-            label_visibility="collapsed",
-            on_change=_on_submit,
-        )
-        if st.session_state.select_error:
-            st.error(st.session_state.select_error)
-            st.session_state.select_error = None
-        step = "1 of 2: first fighter (red)" if SELECTION_ROLE == "player" else "2 of 2: second fighter (blue)"
-        st.markdown(f'<div class="step-note">Step {step}. You control both fighters.</div>', unsafe_allow_html=True)
-    else:
-        # ---- confirmation state ----
-        idx = st.session_state.candidate_idx
-        current = candidates[idx]
-        label = f"{current['name']} from {current['origin']}?" if current["origin"] else f"{current['name']}?"
-        st.markdown(f'<div class="prompt">{html.escape(label)}</div>', unsafe_allow_html=True)
-        no_col, _, yes_col = st.columns([1, 0.6, 1])
-        no_col.button("No", key="btn_no", on_click=_confirm_no)
-        yes_col.button("Yes", key="btn_yes", on_click=_confirm_yes)
-        hint = "Press No to see the next match." if idx + 1 < len(candidates) else "This is the last match."
-        st.markdown(
-            f'<div class="step-note">Match {idx + 1} of {len(candidates)}. {hint}</div>',
-            unsafe_allow_html=True,
-        )
+def render_slot(column, side: str, label: str, role: str, character) -> None:
+    is_active = SELECTION_ROLE == role
+    with column:
+        with st.container(key=f"slot_{side}"):
+            st.markdown(
+                f'<div class="slot-kicker">{"FIGHTER 1 / RED CORNER" if side == "f1" else "FIGHTER 2 / BLUE CORNER"}</div>'
+                f'<div class="slot-title">{label}</div>',
+                unsafe_allow_html=True,
+            )
+            if character is not None:
+                st.markdown(
+                    f'<div class="slot-state ready"><strong>{html.escape(character.name)}</strong>'
+                    'Selection locked. Ready for the arena.</div>',
+                    unsafe_allow_html=True,
+                )
+            elif not is_active:
+                st.markdown(
+                    '<div class="slot-state waiting"><strong>Awaiting contender</strong>'
+                    'This side is next in the selection order.</div>',
+                    unsafe_allow_html=True,
+                )
+            elif st.session_state.candidates:
+                candidates = st.session_state.candidates
+                idx = st.session_state.candidate_idx
+                current = candidates[idx]
+                candidate_name = html.escape(current["name"])
+                origin = html.escape(current["origin"])
+                prompt = f"{candidate_name} from {origin}?" if origin else f"{candidate_name}?"
+                st.markdown(
+                    f'<div class="selection-prompt"><small>Confirm match {idx + 1} of {len(candidates)}</small>{prompt}</div>',
+                    unsafe_allow_html=True,
+                )
+                no_col, yes_col = st.columns(2, gap="small")
+                no_col.button("No", key="btn_no", on_click=_confirm_no)
+                yes_col.button("Yes", key="btn_yes", on_click=_confirm_yes)
+                hint = "More matches available." if idx + 1 < len(candidates) else "Last available match."
+                st.markdown(f'<div class="step-note">{hint}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(
+                    '<div class="selection-prompt"><small>Enter a character</small>'
+                    'Include a show or game to narrow the match.</div>',
+                    unsafe_allow_html=True,
+                )
+                st.text_input(
+                    "Character",
+                    key="char_input",
+                    placeholder="e.g. Steve from Minecraft",
+                    max_chars=80,
+                    label_visibility="collapsed",
+                    on_change=_on_submit,
+                )
+                if st.session_state.select_error:
+                    st.markdown(
+                        f'<div class="selection-error">{html.escape(st.session_state.select_error)}</div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.session_state.select_error = None
+                st.markdown(
+                    '<div class="step-note">Press enter to search. You control both fighters.</div>',
+                    unsafe_allow_html=True,
+                )
+
+
+render_slot(fighter_one, "f1", "Fighter 1", "player", st.session_state.player)
+with versus:
+    st.markdown('<div class="selection-vs"><span>VS</span></div>', unsafe_allow_html=True)
+render_slot(fighter_two, "f2", "Fighter 2", "opponent", st.session_state.opponent)
