@@ -50,7 +50,13 @@ if queued is not None:
                     else "normal"
                 )
                 st.session_state.logs.append(
-                    {"side": result.side, "text": result.text, "kind": kind}
+                    {
+                        "side": result.side,
+                        "text": result.text,
+                        "kind": kind,
+                        "action": result.action,
+                        "damage": result.damage,
+                    }
                 )
             st.session_state.recap = results[-1].text
             if not opponent.alive:
@@ -64,6 +70,46 @@ winner = st.session_state.winner
 game_over = winner is not None
 focus_side = winner if game_over else st.session_state.turn     # whose card/stats to highlight
 focus = player if focus_side == "player" else opponent
+
+last_action = next(
+    (
+        entry for entry in reversed(st.session_state.logs)
+        if entry.get("action") in {"attack", "defend", "tactic"}
+    ),
+    None,
+)
+player_effect = None
+opponent_effect = None
+player_motion = sum(
+    1 for entry in st.session_state.logs
+    if entry.get("side") == "player"
+    and entry.get("action") in {"attack", "defend", "tactic"}
+)
+opponent_motion = sum(
+    1 for entry in st.session_state.logs
+    if entry.get("side") == "opponent"
+    and entry.get("action") in {"attack", "defend", "tactic"}
+)
+if last_action is not None:
+    if last_action["action"] == "defend":
+        if last_action["side"] == "player":
+            player_effect = "defend"
+        else:
+            opponent_effect = "defend"
+    elif last_action["action"] == "tactic":
+        if last_action["side"] == "player":
+            player_effect = "tactic"
+        else:
+            opponent_effect = "tactic"
+    else:
+        if last_action["side"] == "player":
+            player_effect = "attack"
+            if last_action.get("damage", 0) > 0:
+                opponent_effect = "hit"
+        else:
+            opponent_effect = "attack"
+            if last_action.get("damage", 0) > 0:
+                player_effect = "hit"
 
 
 # ----------------------------- main area -----------------------------
@@ -87,10 +133,28 @@ arena_col, logs_col = st.columns([2.1, 1], gap="large")
 
 with arena_col:
     left, versus, right = st.columns([1, 0.12, 1], gap="small")
-    left.markdown(fighter_card(player, "red", active=focus_side == "player"), unsafe_allow_html=True)
+    left.markdown(
+        fighter_card(
+            player,
+            "red",
+            active=focus_side == "player",
+            effect=player_effect,
+            effect_id=player_motion,
+        ),
+        unsafe_allow_html=True,
+    )
     with versus:
         st.markdown('<div class="arena-divider">VS</div>', unsafe_allow_html=True)
-    right.markdown(fighter_card(opponent, "blue", active=focus_side == "opponent"), unsafe_allow_html=True)
+    right.markdown(
+        fighter_card(
+            opponent,
+            "blue",
+            active=focus_side == "opponent",
+            effect=opponent_effect,
+            effect_id=opponent_motion,
+        ),
+        unsafe_allow_html=True,
+    )
 
     if game_over:
         banner = f"<strong>{html.escape(focus.name)}</strong> wins the match"

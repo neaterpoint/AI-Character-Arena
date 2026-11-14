@@ -44,10 +44,22 @@ def hp_bar(char: Character) -> str:
     )
 
 
-def fighter_card(char: Character, color: str, active: bool = True) -> str:
+def fighter_card(
+    char: Character,
+    color: str,
+    active: bool = True,
+    effect: str | None = None,
+    effect_id: int = 0,
+) -> str:
     """Render a fighter's arena HUD without changing character state."""
     side = "f1" if color == "red" else "f2"
     turn_label = "ACTIVE TURN" if active else "ON DECK"
+    motion_class = "motion-even" if effect_id % 2 == 0 else "motion-odd"
+    effect_class = (
+        f" fx-{effect} {motion_class}"
+        if effect in {"attack", "hit", "defend", "tactic"}
+        else ""
+    )
     tactics = ", ".join(html.escape(move) for move in char.tactics_used) or "No tactic used"
     rows = [
         ("ATK", f"{char.atk:.1f}", f"{char.atk_pct:.1f}%"),
@@ -61,7 +73,7 @@ def fighter_card(char: Character, color: str, active: bool = True) -> str:
         for label, value, chance in rows
     )
     return (
-        f'<div class="fighter-card {side}{" active" if active else ""}">'
+        f'<div class="fighter-card {side}{" active" if active else ""}{effect_class}">'
         '<div class="fighter-head">'
         f'<span class="fighter-index">Fighter {"1" if side == "f1" else "2"}</span>'
         f'<span class="fighter-turn{" " if active else " waiting"}">{turn_label}</span>'

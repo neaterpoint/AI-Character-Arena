@@ -92,11 +92,20 @@ fighter_one, versus, fighter_two = st.columns([1, 0.14, 1], gap="small")
 
 def render_slot(column, side: str, label: str, role: str, character) -> None:
     is_active = SELECTION_ROLE == role
+    mode = "active" if is_active else "locked" if character is not None else "inactive"
+    mode_label = (
+        "NOW NAMING / INPUT ACTIVE" if is_active
+        else "PICK LOCKED" if character is not None
+        else "WAITING TURN"
+    )
     with column:
         with st.container(key=f"slot_{side}"):
             st.markdown(
-                f'<div class="slot-kicker">{"FIGHTER 1 / RED CORNER" if side == "f1" else "FIGHTER 2 / BLUE CORNER"}</div>'
-                f'<div class="slot-title">{label}</div>',
+                '<div class="slot-heading">'
+                f'<div class="slot-mode {mode}">{mode_label}</div>'
+                f'<div class="slot-kicker">{"RED CORNER" if side == "f1" else "BLUE CORNER"}</div>'
+                f'<h2 class="slot-title{" active" if is_active else ""}">{label}</h2>'
+                '</div>',
                 unsafe_allow_html=True,
             )
             if character is not None:
@@ -129,8 +138,8 @@ def render_slot(column, side: str, label: str, role: str, character) -> None:
                 st.markdown(f'<div class="step-note">{hint}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(
-                    '<div class="selection-prompt"><small>Enter a character</small>'
-                    'Include a show or game to narrow the match.</div>',
+                    f'<div class="selection-prompt"><small>Type Fighter {label[-1]}\'s name</small>'
+                    'Enter a character, optionally with its show or game.</div>',
                     unsafe_allow_html=True,
                 )
                 st.text_input(

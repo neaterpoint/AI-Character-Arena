@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Press+Start+2P&family=VT323&display=swap');
 
 :root {
   color-scheme: dark;
@@ -76,10 +76,10 @@ section[data-testid="stSidebar"] {
 
 .screen-heading h1 {
   color: var(--text);
-  font-family: 'Barlow Condensed', sans-serif !important;
-  font-size: clamp(1.7rem, 3vw, 2.5rem);
-  font-weight: 700;
-  letter-spacing: .035em;
+  font-family: 'VT323', monospace !important;
+  font-size: clamp(2.4rem, 4vw, 3.5rem);
+  font-weight: 400;
+  letter-spacing: .04em;
   line-height: 1;
   margin: 0;
   text-transform: uppercase;
@@ -90,17 +90,18 @@ section[data-testid="stSidebar"] {
 .stat-label,
 .hp-label,
 .slot-kicker,
+.slot-mode,
 .log-kind,
 .turn-tag,
 .mono {
-  font-family: 'DM Mono', monospace !important;
+  font-family: 'Press Start 2P', monospace !important;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
 
 .eyebrow {
   color: var(--muted);
-  font-size: .68rem;
+  font-size: .48rem;
   text-align: right;
 }
 
@@ -144,27 +145,65 @@ section[data-testid="stSidebar"] {
   border-top: 2px solid var(--f1);
   min-height: 24rem;
   padding: 1.1rem 1.2rem 1.25rem;
+  transition: opacity .18s ease, border-color .18s ease, background-color .18s ease;
 }
 
 .st-key-slot_f2 {
   border-top-color: var(--f2);
 }
 
+.st-key-slot_f1:has(.slot-mode.active),
+.st-key-slot_f2:has(.slot-mode.active) {
+  background: #1b1e26;
+  border: 2px solid var(--amber);
+  border-top-width: 5px;
+}
+
+.st-key-slot_f1:has(.slot-mode.inactive),
+.st-key-slot_f2:has(.slot-mode.inactive) {
+  opacity: .42;
+}
+
+.st-key-slot_f1:has(.slot-mode.locked),
+.st-key-slot_f2:has(.slot-mode.locked) {
+  opacity: .62;
+}
+
+.slot-mode {
+  color: var(--muted);
+  font-size: .44rem;
+  line-height: 1.7;
+  margin-bottom: .45rem;
+}
+
+.slot-mode.active {
+  color: var(--amber);
+}
+
 .slot-kicker {
   color: var(--muted);
-  font-size: .66rem;
+  font-size: .52rem;
   margin-bottom: .4rem;
 }
 
 .slot-title {
   color: var(--text);
-  font-family: 'Barlow Condensed', sans-serif !important;
-  font-size: 1.65rem;
-  font-weight: 700;
+  font-family: 'VT323', monospace !important;
+  font-size: 2.1rem;
+  font-weight: 400;
   letter-spacing: .05em;
   line-height: 1;
   margin-bottom: 1rem;
   text-transform: uppercase;
+}
+
+.slot-title.active {
+  color: #fff;
+  font-size: clamp(3rem, 5vw, 4.7rem);
+  letter-spacing: .02em;
+  line-height: .82;
+  margin: .15rem 0 1.1rem;
+  text-shadow: 2px 2px 0 #000;
 }
 
 .slot-state {
@@ -191,21 +230,24 @@ section[data-testid="stSidebar"] {
 }
 
 .selection-prompt {
-  border-left: 2px solid var(--amber);
+  background: #101319;
+  border: 1px solid var(--line-strong);
+  border-left: 4px solid var(--amber);
   color: var(--text);
-  font-size: 1rem;
-  line-height: 1.4;
-  margin: 1.1rem 0 .75rem;
-  padding: .55rem .75rem;
+  font-family: 'VT323', monospace !important;
+  font-size: 1.6rem;
+  line-height: 1.15;
+  margin: .85rem 0 .75rem;
+  padding: .7rem .8rem;
 }
 
 .selection-prompt small {
   color: var(--muted);
   display: block;
-  font-family: 'DM Mono', monospace;
-  font-size: .68rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: .44rem;
   letter-spacing: .04em;
-  margin-bottom: .2rem;
+  margin-bottom: .5rem;
   text-transform: uppercase;
 }
 
@@ -227,11 +269,21 @@ section[data-testid="stSidebar"] {
 
 .stTextInput input {
   background: #101319;
-  border: 1px solid var(--line-strong);
+  border: 2px solid var(--line-strong);
   border-radius: 0;
   color: var(--text);
-  font-size: .98rem;
-  min-height: 2.8rem;
+  font-family: 'VT323', monospace !important;
+  font-size: 1.45rem;
+  min-height: 3.6rem;
+}
+
+.st-key-slot_f1:has(.slot-mode.active) .stTextInput input,
+.st-key-slot_f2:has(.slot-mode.active) .stTextInput input {
+  background: #0c0e12;
+  border-color: var(--amber);
+  font-size: 1.75rem;
+  min-height: 4.2rem;
+  padding: .75rem 1rem;
 }
 
 .stTextInput input:focus {
@@ -249,8 +301,174 @@ section[data-testid="stSidebar"] {
   background: var(--panel);
   border: 1px solid var(--line);
   min-height: 17rem;
+  overflow: hidden;
   padding: 1.15rem 1.25rem 1.1rem;
-  transition: border-color .15s ease, background .15s ease;
+  position: relative;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.fighter-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.fighter-card.fx-attack.f1 {
+  animation: lunge-right .34s steps(5, end) both;
+}
+
+.fighter-card.fx-attack.f2 {
+  animation: lunge-left .34s steps(5, end) both;
+}
+
+.fighter-card.fx-hit.f1 {
+  animation: hit-shake .36s steps(7, end) both;
+}
+
+.fighter-card.fx-hit.f2 {
+  animation: hit-shake .36s steps(7, end) both;
+}
+
+.fighter-card.fx-defend {
+  animation: brace .38s steps(4, end) both;
+}
+
+.fighter-card.fx-tactic {
+  animation: tactic-rise .48s ease-out both;
+}
+
+.fighter-card.fx-attack.f1.motion-odd {
+  animation-name: lunge-right-alt;
+}
+
+.fighter-card.fx-attack.f2.motion-odd {
+  animation-name: lunge-left-alt;
+}
+
+.fighter-card.fx-hit.motion-odd {
+  animation-name: hit-shake-alt;
+}
+
+.fighter-card.fx-defend.motion-odd {
+  animation-name: brace-alt;
+}
+
+.fighter-card.fx-tactic.motion-odd {
+  animation-name: tactic-rise-alt;
+}
+
+.fighter-card.fx-defend.motion-odd::after {
+  animation-name: shield-flash-alt;
+}
+
+.fighter-card.fx-tactic.motion-odd::after {
+  animation-name: tactic-flash-alt;
+}
+
+.fighter-card.fx-defend::after,
+.fighter-card.fx-tactic::after {
+  content: "";
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.fighter-card.fx-defend::after {
+  animation: shield-flash .42s ease-out both;
+  border: 3px solid #78aec7;
+  box-shadow: inset 0 0 0 2px #78aec744;
+}
+
+.fighter-card.fx-tactic::after {
+  animation: tactic-flash .5s ease-out both;
+  background: radial-gradient(ellipse at center, #d2a45255 0%, #d2a45218 45%, transparent 76%);
+}
+
+@keyframes lunge-right {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(15px); }
+  68% { transform: translateX(5px); }
+}
+
+@keyframes lunge-left {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(-15px); }
+  68% { transform: translateX(-5px); }
+}
+
+@keyframes hit-shake {
+  0%, 100% { transform: translateX(0); }
+  14% { transform: translateX(-7px); }
+  29% { transform: translateX(6px); }
+  43% { transform: translateX(-5px); }
+  57% { transform: translateX(4px); }
+  71% { transform: translateX(-2px); }
+  86% { transform: translateX(1px); }
+}
+
+@keyframes brace {
+  0%, 100% { transform: scale(1); }
+  35%, 68% { transform: scale(.98); }
+}
+
+@keyframes tactic-rise {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(-4px); }
+  70% { transform: translateY(-1px); }
+}
+
+@keyframes shield-flash {
+  0%, 100% { opacity: 0; transform: scale(.97); }
+  35% { opacity: .8; transform: scale(1); }
+}
+
+@keyframes tactic-flash {
+  0%, 100% { opacity: 0; transform: scale(.82); }
+  30% { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes shield-flash-alt {
+  0%, 100% { opacity: 0; transform: scale(.97); }
+  35% { opacity: .8; transform: scale(1); }
+}
+
+@keyframes tactic-flash-alt {
+  0%, 100% { opacity: 0; transform: scale(.82); }
+  30% { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes lunge-right-alt {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(15px); }
+  68% { transform: translateX(5px); }
+}
+
+@keyframes lunge-left-alt {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(-15px); }
+  68% { transform: translateX(-5px); }
+}
+
+@keyframes hit-shake-alt {
+  0%, 100% { transform: translateX(0); }
+  14% { transform: translateX(-7px); }
+  29% { transform: translateX(6px); }
+  43% { transform: translateX(-5px); }
+  57% { transform: translateX(4px); }
+  71% { transform: translateX(-2px); }
+  86% { transform: translateX(1px); }
+}
+
+@keyframes brace-alt {
+  0%, 100% { transform: scale(1); }
+  35%, 68% { transform: scale(.98); }
+}
+
+@keyframes tactic-rise-alt {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(-4px); }
+  70% { transform: translateY(-1px); }
 }
 
 .fighter-card.f1 {
@@ -303,9 +521,9 @@ section[data-testid="stSidebar"] {
 
 .fighter-name {
   color: var(--text);
-  font-family: 'Barlow Condensed', sans-serif !important;
-  font-size: clamp(1.65rem, 3vw, 2.35rem);
-  font-weight: 700;
+  font-family: 'VT323', monospace !important;
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 400;
   line-height: 1.05;
   margin: 0 0 1rem;
   overflow-wrap: anywhere;
@@ -333,7 +551,7 @@ section[data-testid="stSidebar"] {
 
 .hp-fill {
   height: 100%;
-  transition: width .35s ease;
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.25s ease;
 }
 
 .hp-fill.ok {
@@ -431,8 +649,8 @@ section[data-testid="stSidebar"] {
   align-items: center;
   color: var(--amber);
   display: flex;
-  font-family: 'Barlow Condensed', sans-serif !important;
-  font-size: 1.3rem;
+  font-family: 'VT323', monospace !important;
+  font-size: 1.8rem;
   font-weight: 800;
   height: 100%;
   justify-content: center;
@@ -592,8 +810,8 @@ section[data-testid="stSidebar"] {
   border: 1px solid var(--line-strong);
   border-radius: 0;
   color: var(--text);
-  font-family: 'Barlow Condensed', sans-serif !important;
-  font-size: 1.05rem;
+  font-family: 'VT323', monospace !important;
+  font-size: 1.4rem;
   font-weight: 700;
   height: 3rem;
   letter-spacing: .09em;
@@ -606,6 +824,11 @@ section[data-testid="stSidebar"] {
   border-color: #626a78;
   color: #fff;
   transform: translateY(-1px);
+}
+
+.stButton button:active {
+  transform: translateY(1px) scale(.985);
+  transition-duration: .06s;
 }
 
 .stButton button:focus-visible {
@@ -676,10 +899,25 @@ section[data-testid="stSidebar"] {
   }
 
   .fighter-name {
-    font-size: 1.55rem;
+    font-size: 2rem;
+  }
+
+  .slot-title.active {
+    font-size: 3rem;
   }
 
   .stats-grid > span {
     font-size: .69rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
   }
 }
