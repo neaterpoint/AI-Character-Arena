@@ -726,8 +726,10 @@ section[data-testid="stSidebar"] {
   font-size: .82rem;
   line-height: 1.5;
   margin: 0 0 .55rem;
+  opacity: .65;
   padding: .6rem .7rem;
   overflow-wrap: anywhere;
+  transition: background-color .18s ease, box-shadow .18s ease, opacity .18s ease;
 }
 
 .log-line.player {
@@ -755,6 +757,44 @@ section[data-testid="stSidebar"] {
   border-left-color: #e2a947;
   color: #f0cf8e;
   font-weight: 600;
+}
+
+.log-line.active-log {
+  background: #242a33;
+  border-left-width: 4px;
+  box-shadow: inset 0 0 0 1px #ffffff12, 0 0 14px #dce5ef13;
+  color: #f4f5f7;
+  font-size: .91rem;
+  font-weight: 600;
+  opacity: 1;
+  padding: .75rem .8rem;
+}
+
+.log-line.player.active-log {
+  background: #292020;
+  border-left-color: #f07872;
+  box-shadow: inset 0 0 0 1px #f0787217, 0 0 14px #d65b5726;
+}
+
+.log-line.opponent.active-log {
+  background: #1d272e;
+  border-left-color: #8bc0d8;
+  box-shadow: inset 0 0 0 1px #8bc0d817, 0 0 14px #6b9ab226;
+}
+
+.log-line.critical.active-log,
+.log-line.sudden.active-log {
+  background: #382222;
+  border-left-color: #f17b6e;
+  box-shadow: inset 0 0 0 1px #f17b6e2b, 0 0 18px #df574838;
+  color: #fff0eb;
+}
+
+.log-line.tactic.active-log {
+  background: #332b1b;
+  border-left-color: #f0c05e;
+  box-shadow: inset 0 0 0 1px #f0c05e24, 0 0 18px #d2a45238;
+  color: #fff2ca;
 }
 
 .st-key-logs_panel {

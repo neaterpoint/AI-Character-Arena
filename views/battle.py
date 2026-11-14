@@ -250,7 +250,9 @@ else:
                 f'<div class="log-heading">Combat Log<span>{len(st.session_state.logs)} entries</span></div>',
                 unsafe_allow_html=True,
             )
-            for entry in reversed(st.session_state.logs):      # newest first
+            logs = st.session_state.logs
+            for index in range(len(logs) - 1, -1, -1):      # newest first
+                entry = logs[index]
                 text = entry["text"]
                 lowered = text.lower()
                 kind = entry.get("kind")
@@ -263,7 +265,9 @@ else:
                         kind = "critical"
                     else:
                         kind = "normal"
+                active_class = " active-log" if index == len(logs) - 1 else ""
                 st.markdown(
-                    f'<div class="log-line {entry["side"]} {kind}">{html.escape(text)}</div>',
+                    f'<div class="log-line {entry["side"]} {kind}{active_class}">'
+                    f'{html.escape(text)}</div>',
                     unsafe_allow_html=True,
                 )
