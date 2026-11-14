@@ -1,13 +1,13 @@
 """Plain data classes shared by the engine, the AI client and the views."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class Character:
     name: str
-    source: str = ""            # show/game they are from
+    source: str = ""            # show/game they are from (used for lore, never shown in battle)
     description: str = ""
     max_hp: int = 100
     hp: int = 100
@@ -19,6 +19,7 @@ class Character:
     crit_pct: float = 20.0      # critical hit chance (%)
     state: str = "Fresh and ready"   # short status text shown in the sidebar
     defending: bool = False
+    tactics_used: list[str] = field(default_factory=list)   # recent tactic names (avoids repeats)
 
     @property
     def alive(self) -> bool:
@@ -39,10 +40,8 @@ class Narration:
 
 @dataclass
 class TacticOutcome:
-    """What the AI decides a free-form tactic does. The engine clamps these numbers."""
+    """The AI's lore-accurate flavour for a tactic. The engine decides the numbers."""
     text: str
-    damage: int = 0
-    heal: int = 0
-    defend: bool = False
+    move: str = ""
     actor_state: str | None = None
     target_state: str | None = None

@@ -10,13 +10,19 @@ from core.models import Character
 
 CSS_PATH = Path(__file__).resolve().parent.parent / "assets" / "style.css"
 
+# Written as escapes so they survive any file-encoding mix-up.
+SWORDS = "\u2694\ufe0f"                 # crossed swords
+TROPHY = "\U0001F3C6"                   # trophy
+FLASK = "\U0001F9EA"                    # test tube
+SINGER = "\U0001F9D1\u200d\U0001F3A4"   # singer
+
 
 def load_css() -> None:
     st.markdown(f"<style>{CSS_PATH.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
 
 def page_title() -> None:
-    st.markdown('<div class="app-title">⚔️ AI CHARACTER ARENA</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="app-title">{SWORDS} AI CHARACTER ARENA</div>', unsafe_allow_html=True)
 
 
 def circle(color: str) -> str:
@@ -35,9 +41,11 @@ def hp_bar(char: Character) -> str:
     )
 
 
-def fighter_card(char: Character, color: str) -> str:
+def fighter_card(char: Character, color: str, active: bool = True) -> str:
+    """`active=False` dims the card (it is the other fighter's turn)."""
+    style = "" if active else ' style="opacity:.45"'
     return (
-        '<div class="fighter">'
+        f'<div class="fighter"{style}>'
         f"{circle(color)}"
         f'<div class="fighter-name">{html.escape(char.name)}</div>'
         f"{hp_bar(char)}</div>"

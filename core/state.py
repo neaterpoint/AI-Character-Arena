@@ -4,17 +4,22 @@ import streamlit as st
 
 def _defaults() -> dict:
     return {
+        # --- character selection ---
         "select_for": "player",     # which fighter is being chosen: "player" | "opponent"
-        "candidate": None,          # Character awaiting Yes/No confirmation
         "submitted_query": None,    # text typed in the selection box
+        "candidates": [],           # [{"name": str, "origin": str}] possible matches to confirm
+        "candidate_idx": 0,         # which candidate is currently being asked about
+        "confirmed_pick": None,     # candidate the user said Yes to (stats get built next)
         "select_error": None,
-        "player": None,
-        "opponent": None,
-        "turn": "player",
+        # --- battle ---
+        "player": None,             # Fighter 1 (red)
+        "opponent": None,           # Fighter 2 (blue)
+        "turn": "player",           # whose turn it is: "player" | "opponent"
+        "action_count": 0,          # actions taken so far (sudden death at the limit)
         "logs": [],                 # [{"side": "player"|"opponent", "text": str}]
-        "recap": None,              # the opponent's latest move
+        "recap": None,              # the latest action's outcome
         "winner": None,             # None | "player" | "opponent"
-        "queued_action": None,      # (action, detail) set by the buttons
+        "queued_action": None,      # "attack" | "defend" | "tactic", set by the buttons
     }
 
 

@@ -1,14 +1,16 @@
-"""Screen 2: the arena. Player acts, the AI opponent answers, repeat until someone hits 0 HP."""
+"""Screen 2: the arena. One person controls BOTH fighters; turns alternate until
+someone reaches 0 HP or the action limit forces a sudden-death knockout."""
 import html
 
 import streamlit as st
 
 from core import engine
 from core.state import reset_game
-from core.ui import fighter_card, page_title, stats_grid
+from core.ui import FLASK, TROPHY, fighter_card, page_title, stats_grid
 from services import ai_client
 
 SELECTION_PAGE = "views/character_selection.py"
+SIDE_HEX = {"player": "#ff3b3b", "opponent": "#38b6ff"}   # fighter 1 = red, fighter 2 = blue
 
 player = st.session_state.player
 opponent = st.session_state.opponent
@@ -16,23 +18,14 @@ if player is None or opponent is None:       # opened directly / state lost
     st.switch_page(SELECTION_PAGE)
 
 
+def fighters_for(turn: str):
+    """Return (acting fighter, other fighter) for the given side."""
+    return (player, opponent) if turn == "player" else (opponent, player)
+
+
 # ----------------------------- actions -----------------------------
-def queue_action(action: str, detail: str | None = None) -> None:
-    st.session_state.queued_action = (action, detail)
-
-
-@st.dialog("Choose a tactic")
-def tactic_dialog() -> None:
-    st.write(f"Describe what {player.name} does. Be creative and use their abilities.")
-    text = st.text_input(
-        "Tactic",
-        placeholder=f"e.g. Pull {opponent.name} closer with a fishing rod",
-        max_chars=140,
-        label_visibility="collapsed",
-    )
-    if st.button("Use tactic", key="btn_exec", disabled=not text.strip()):
-        queue_action("tactic", text.strip())
-        st.rerun()   # full rerun closes the dialog
+def queue_action(action: str) -> None:
+    st.session_state.queued_action = action
 
 
 # Resolve a queued action BEFORE drawing, so the screen shows fresh numbers
@@ -40,13 +33,16 @@ queued = st.session_state.queued_action
 if queued is not None:
     st.session_state.queued_action = None
     if st.session_state.winner is None:
-        action, detail = queued
+        turn = st.session_state.turn
+        actor, target = fighters_for(turn)
+        action_number = st.session_state.action_count + 1
         try:
             with st.spinner("Resolving turn..."):
-                results = engine.play_round(player, opponent, action, detail)
-        except Exception as exc:  # noqa: BLE001
-            st.error(f"The AI couldn't resolve that turn: {exc}")
+                results = engine.play_turn(actor, target, turn, queued, action_number)
+        except Exception as exc:  # noqa: BLE001 - show any AI/API failure to the player
+            st.error(f"The AI couldn't resolve that turn, please try again. ({exc})")
         else:
+            st.session_state.action_count = action_number
             for result in results:
                 st.session_state.logs.append({"side": result.side, "text": result.text})
             st.session_state.recap = results[-1].text
@@ -54,24 +50,31 @@ if queued is not None:
                 st.session_state.winner = "player"
             elif not player.alive:
                 st.session_state.winner = "opponent"
+            else:
+                st.session_state.turn = "opponent" if turn == "player" else "player"
 
 winner = st.session_state.winner
 game_over = winner is not None
+focus_side = winner if game_over else st.session_state.turn     # whose card/stats to highlight
+focus = player if focus_side == "player" else opponent
 
 
 # ----------------------------- sidebar -----------------------------
 with st.sidebar:
     turn_tag = "" if game_over else '<span class="turn-tag">Current Turn</span>'
     st.markdown('<div class="side-label">Character</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="side-name">{html.escape(player.name)}{turn_tag}</div>', unsafe_allow_html=True)
-    st.markdown(stats_grid(player), unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="side-name" style="color:{SIDE_HEX[focus_side]}">{html.escape(focus.name)}{turn_tag}</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(stats_grid(focus), unsafe_allow_html=True)
     st.markdown(
         '<div class="state-box"><div class="state-title">Character State</div>'
-        f"{html.escape(player.state)}</div>",
+        f"{html.escape(focus.state)}</div>",
         unsafe_allow_html=True,
     )
     if ai_client.is_mock_mode():
-        st.caption("🧪 AI placeholder mode: no API key set, responses are fake.")
+        st.caption(f"{FLASK} Demo mode: no API key set, responses are simulated.")
     if st.button("New match", key="btn_reset"):
         reset_game()
         st.switch_page(SELECTION_PAGE)
@@ -83,21 +86,27 @@ arena_col, logs_col = st.columns([2.3, 1.2], gap="large")
 
 with arena_col:
     left, right = st.columns(2)
-    left.markdown(fighter_card(player, "red"), unsafe_allow_html=True)
-    right.markdown(fighter_card(opponent, "blue"), unsafe_allow_html=True)
+    left.markdown(fighter_card(player, "red", active=focus_side == "player"), unsafe_allow_html=True)
+    right.markdown(fighter_card(opponent, "blue", active=focus_side == "opponent"), unsafe_allow_html=True)
+
+    if game_over:
+        banner = f"{TROPHY} {focus.name} wins!"
+    else:
+        number = min(st.session_state.action_count + 1, engine.MAX_ACTIONS)
+        banner = f"{focus.name}'s turn - action {number} of {engine.MAX_ACTIONS}"
+    st.markdown(f'<div class="banner">{html.escape(banner)}</div>', unsafe_allow_html=True)
 
     atk_col, def_col, tac_col = st.columns(3)
     atk_col.button("Attack", key="btn_attack", on_click=queue_action, args=("attack",), disabled=game_over)
     def_col.button("Defend", key="btn_defend", on_click=queue_action, args=("defend",), disabled=game_over)
-    if tac_col.button("Tactic", key="btn_tactic", disabled=game_over):
-        tactic_dialog()
+    tac_col.button(
+        "Tactic", key="btn_tactic", on_click=queue_action, args=("tactic",), disabled=game_over,
+        help="A random lore-based move that boosts Atk, Def or Crit chance.",
+    )
 
-    if game_over:
-        champion = player if winner == "player" else opponent
-        st.markdown(f'<div class="banner">🏆 {html.escape(champion.name)} wins!</div>', unsafe_allow_html=True)
-        if st.button("Play again", key="btn_again"):
-            reset_game()
-            st.switch_page(SELECTION_PAGE)
+    if game_over and st.button("Play again", key="btn_again"):
+        reset_game()
+        st.switch_page(SELECTION_PAGE)
 
     recap = st.session_state.recap
     body = (

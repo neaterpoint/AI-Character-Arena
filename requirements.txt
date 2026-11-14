@@ -1,3 +1,2 @@
 streamlit>=1.46
-# Uncomment once the professor's API details arrive (if it is OpenAI-compatible):
-# openai>=1.0
+openai>=1.0

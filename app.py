@@ -6,11 +6,11 @@ The actual screens live in views/.
 import streamlit as st
 
 from core.state import init_state
-from core.ui import load_css
+from core.ui import SINGER, SWORDS, load_css
 
 st.set_page_config(
     page_title="AI Character Arena",
-    page_icon="⚔️",
+    page_icon=SWORDS,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -18,13 +18,13 @@ st.set_page_config(
 init_state()
 load_css()
 
-# Modern multipage routing: st.navigation + st.Page (instead of the old `pages/` folder).
-# position="hidden" hides the default nav menu because the app moves between
-# screens on its own with st.switch_page (requires Streamlit >= 1.46).
+# st.navigation + st.Page routing. position="hidden" hides the default nav menu
+# because the app moves between screens itself with st.switch_page
+# (requires Streamlit >= 1.46).
 page = st.navigation(
     [
-        st.Page("views/character_selection.py", title="Character Selection", icon="🧑‍🎤", default=True),
-        st.Page("views/battle.py", title="Battle", icon="⚔️"),
+        st.Page("views/character_selection.py", title="Character Selection", icon=SINGER, default=True),
+        st.Page("views/battle.py", title="Battle", icon=SWORDS),
     ],
     position="hidden",
 )
