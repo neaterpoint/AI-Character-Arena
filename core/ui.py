@@ -22,7 +22,10 @@ def load_css() -> None:
 
 
 def page_title() -> None:
-    st.markdown(f'<div class="app-title">{SWORDS} AI CHARACTER ARENA</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="app-title">AI Character Arena</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def circle(color: str) -> str:
@@ -34,29 +37,77 @@ def hp_bar(char: Character) -> str:
     ratio = char.hp_ratio
     level = "ok" if ratio > 0.5 else "warn" if ratio > 0.25 else "low"
     return (
-        '<div class="hp-row"><span>HP:</span>'
+        '<div class="hp-row"><span class="hp-label">HP</span>'
         '<div class="hp-track">'
         f'<div class="hp-fill {level}" style="width:{ratio * 100:.0f}%"></div></div>'
-        f"<span>{char.hp}/{char.max_hp}</span></div>"
+        f'<span class="hp-value">{char.hp}/{char.max_hp}</span></div>'
     )
 
 
-def fighter_card(char: Character, color: str, active: bool = True) -> str:
-    """`active=False` dims the card (it is the other fighter's turn)."""
-    style = "" if active else ' style="opacity:.45"'
+def fighter_card(
+    char: Character,
+    color: str,
+    active: bool = True,
+    effect: str | None = None,
+    effect_id: int = 0,
+    defending: bool = False,
+    knocked_out: bool = False,
+    victorious: bool = False,
+) -> str:
+    """Render a fighter's arena HUD without changing character state."""
+    side = "f1" if color == "red" else "f2"
+    turn_label = "ACTIVE TURN" if active else "ON DECK"
+    motion_class = "motion-even" if effect_id % 2 == 0 else "motion-odd"
+    effect_class = (
+        f" fx-{effect} {motion_class}"
+        if effect in {"attack", "hit", "defend", "tactic"}
+        else ""
+    )
+    state_class = (
+        f" {'active' if active else 'inactive'}"
+        f" {'defending' if defending else ''}"
+        f" {'knocked-out' if knocked_out else ''}"
+        f" {'victorious' if victorious else ''}"
+    )
+    tactics = ", ".join(html.escape(move) for move in char.tactics_used) or "No tactic used"
+    rows = [
+        ("ATK", f"{char.atk:.1f}", f"{char.atk_pct:.1f}%"),
+        ("DEF", f"{char.defense:.1f}", f"{char.def_pct:.1f}%"),
+        ("CRIT", f"{char.crit_mult:.1f}x", f"{char.crit_pct:.1f}%"),
+    ]
+    cells = "".join(
+        f'<span class="stat-label">{label}</span>'
+        f'<span class="stat-value">{value}</span>'
+        f'<span class="stat-chance">{chance}</span>'
+        for label, value, chance in rows
+    )
     return (
-        f'<div class="fighter"{style}>'
-        f"{circle(color)}"
+        f'<div class="fighter-card {side}{state_class}{effect_class}">'
+        '<div class="fighter-head">'
+        f'<span class="fighter-index">Fighter {"1" if side == "f1" else "2"}</span>'
+        f'<span class="fighter-turn{" " if active else " waiting"}">{turn_label}</span>'
+        '</div>'
         f'<div class="fighter-name">{html.escape(char.name)}</div>'
-        f"{hp_bar(char)}</div>"
+        f'{hp_bar(char)}'
+        f'<div class="stats-grid">{cells}</div>'
+        '<div class="tactic-row"><span class="stat-label">TACTIC</span>'
+        f'<span class="tactic-value">{tactics}</span></div>'
+        '<div class="state-row"><span class="stat-label">STATE</span>'
+        f'<span class="state-value">{html.escape(char.state)}</span></div>'
+        '</div>'
     )
 
 
 def stats_grid(char: Character) -> str:
     rows = [
-        ("Atk", f"{char.atk:.1f}", f"{char.atk_pct:.1f}%"),
-        ("Def", f"{char.defense:.1f}", f"{char.def_pct:.1f}%"),
-        ("Crit%", f"{char.crit_mult:.1f}x", f"{char.crit_pct:.1f}%"),
+        ("ATK", f"{char.atk:.1f}", f"{char.atk_pct:.1f}%"),
+        ("DEF", f"{char.defense:.1f}", f"{char.def_pct:.1f}%"),
+        ("CRIT", f"{char.crit_mult:.1f}x", f"{char.crit_pct:.1f}%"),
     ]
-    cells = "".join(f"<span>{a}</span><span>{b}</span><span>{c}</span>" for a, b, c in rows)
+    cells = "".join(
+        f'<span class="stat-label">{label}</span>'
+        f'<span class="stat-value">{value}</span>'
+        f'<span class="stat-chance">{chance}</span>'
+        for label, value, chance in rows
+    )
     return f'<div class="stats-grid">{cells}</div>'

@@ -12,7 +12,7 @@ st.set_page_config(
     page_title="AI Character Arena",
     page_icon=SWORDS,
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 init_state()
