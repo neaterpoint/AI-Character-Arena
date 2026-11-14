@@ -50,6 +50,9 @@ def fighter_card(
     active: bool = True,
     effect: str | None = None,
     effect_id: int = 0,
+    defending: bool = False,
+    knocked_out: bool = False,
+    victorious: bool = False,
 ) -> str:
     """Render a fighter's arena HUD without changing character state."""
     side = "f1" if color == "red" else "f2"
@@ -59,6 +62,12 @@ def fighter_card(
         f" fx-{effect} {motion_class}"
         if effect in {"attack", "hit", "defend", "tactic"}
         else ""
+    )
+    state_class = (
+        f" {'active' if active else 'inactive'}"
+        f" {'defending' if defending else ''}"
+        f" {'knocked-out' if knocked_out else ''}"
+        f" {'victorious' if victorious else ''}"
     )
     tactics = ", ".join(html.escape(move) for move in char.tactics_used) or "No tactic used"
     rows = [
@@ -73,7 +82,7 @@ def fighter_card(
         for label, value, chance in rows
     )
     return (
-        f'<div class="fighter-card {side}{" active" if active else ""}{effect_class}">'
+        f'<div class="fighter-card {side}{state_class}{effect_class}">'
         '<div class="fighter-head">'
         f'<span class="fighter-index">Fighter {"1" if side == "f1" else "2"}</span>'
         f'<span class="fighter-turn{" " if active else " waiting"}">{turn_label}</span>'
