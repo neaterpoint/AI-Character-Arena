@@ -78,6 +78,12 @@ if query:
     st.rerun()
 
 page_title()
+if ai_client.is_mock_mode():
+    st.warning(
+        "Demo mode: no valid AI_API_KEY found, so suggestions are simulated "
+        "('Demo Universe N') and stats are random. Check .streamlit/secrets.toml.",
+        icon="⚠️",
+    )
 st.markdown(
     '<div class="screen-heading"><h1>Select your fighters</h1>'
     '<div class="eyebrow">Two picks. One arena.</div></div>',
