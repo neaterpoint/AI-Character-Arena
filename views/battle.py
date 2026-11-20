@@ -1,13 +1,11 @@
 """Screen 2: the arena. One person controls BOTH fighters; turns alternate until
 someone reaches 0 HP or the action limit forces a sudden-death knockout."""
-import html
-
 import streamlit as st
 
 from core import engine
 from core.models import Character
 from core.state import reset_game
-from core.ui import fighter_card, page_title
+from core.ui import escape_safe_text, fighter_card, page_title
 from services import ai_client
 
 SELECTION_PAGE = "views/character_selection.py"
@@ -39,8 +37,8 @@ if queued is not None:
         try:
             with st.spinner("Resolving turn..."):
                 results = engine.play_turn(actor, target, turn, queued, action_number)
-        except Exception as exc:  # noqa: BLE001 - show any AI/API failure to the player
-            st.error(f"The AI couldn't resolve that turn, please try again. ({exc})")
+        except Exception:  # noqa: BLE001 - never expose raw provider/API stack details
+            st.error("The AI couldn't resolve that turn, please try again.")
         else:
             st.session_state.action_count = action_number
             for result in results:
@@ -71,6 +69,7 @@ winner = st.session_state.winner
 game_over = winner is not None
 focus_side = winner if game_over else st.session_state.turn     # whose card/stats to highlight
 focus = player if focus_side == "player" else opponent
+
 
 def is_shielded(side: str, character: Character) -> bool:
     """Keep the visual shield until a later incoming attack deals damage."""
@@ -147,7 +146,7 @@ if game_over:
         '<div class="victory-champion">'
         '<div class="victory-banner">VICTORY</div>'
         f'{fighter_card(focus, winner_color, active=True, victorious=True)}'
-        f'<div class="victory-name">{html.escape(focus.name)} WINS</div>'
+        f'<div class="victory-name">{escape_safe_text(focus.name)} WINS</div>'
         '</div>'
         '</div>'
         '</div>',
@@ -203,7 +202,7 @@ else:
 
         number = min(st.session_state.action_count + 1, engine.MAX_ACTIONS)
         banner = (
-            f"<strong>{html.escape(focus.name)}</strong> to act / "
+            f"<strong>{escape_safe_text(focus.name)}</strong> to act / "
             f"action {number} of {engine.MAX_ACTIONS}"
         )
         st.markdown(f'<div class="battle-banner">{banner}</div>', unsafe_allow_html=True)
@@ -235,7 +234,7 @@ else:
 
         recap = st.session_state.recap
         body = (
-            f'<div class="recap-text">{html.escape(recap)}</div>'
+            f'<div class="recap-text">{escape_safe_text(recap)}</div>'
             if recap
             else '<div class="recap-empty">Choose an action to start the fight.</div>'
         )
@@ -268,6 +267,6 @@ else:
                 active_class = " active-log" if index == len(logs) - 1 else ""
                 st.markdown(
                     f'<div class="log-line {entry["side"]} {kind}{active_class}">'
-                    f'{html.escape(text)}</div>',
+                    f'{escape_safe_text(text)}</div>',
                     unsafe_allow_html=True,
                 )
