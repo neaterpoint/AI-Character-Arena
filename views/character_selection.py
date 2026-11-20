@@ -7,11 +7,18 @@ import html
 
 import streamlit as st
 
-from core.ui import page_title
+from core.ui import escape_safe_text, page_title
 from services import ai_client
 
 SELECTION_ROLE = st.session_state.select_for          # "player" | "opponent"
 BATTLE_PAGE = "views/battle.py"
+
+
+def _format_user_error(exc: Exception, fallback: str) -> str:
+    """Only surface intentional validation errors; hide raw API/provider stack details."""
+    if isinstance(exc, ValueError):
+        return str(exc)
+    return fallback
 
 
 def _on_submit() -> None:
@@ -24,6 +31,11 @@ def _on_submit() -> None:
 
 def _confirm_yes() -> None:
     state = st.session_state
+    # Guard against rapid double-clicks when candidates have already been consumed
+    if not state.candidates or not (0 <= state.candidate_idx < len(state.candidates)):
+        return
+    if state.confirmed_pick is not None:
+        return
     state.confirmed_pick = state.candidates[state.candidate_idx]
     state.candidates = []
     state.candidate_idx = 0
@@ -31,6 +43,8 @@ def _confirm_yes() -> None:
 
 def _confirm_no() -> None:
     state = st.session_state
+    if not state.candidates:
+        return
     next_idx = state.candidate_idx + 1
     if next_idx < len(state.candidates):
         state.candidate_idx = next_idx            # ask about the next possible origin
@@ -54,8 +68,10 @@ if pick:
     try:
         with st.spinner("Building character stats..."):
             character = ai_client.build_character(pick["name"], pick["origin"])
-    except Exception as exc:  # noqa: BLE001 - show any AI/API failure to the user
-        st.session_state.select_error = f"Couldn't build that character: {exc}"
+    except Exception as exc:  # noqa: BLE001 - sanitize before showing to user
+        st.session_state.select_error = _format_user_error(
+            exc, "Couldn't build that character right now. Please try again."
+        )
     else:
         if st.session_state.select_for == "player":
             st.session_state.player = character
@@ -73,8 +89,12 @@ if query:
         with st.spinner("Looking up character..."):
             st.session_state.candidates = ai_client.find_origins(query)
             st.session_state.candidate_idx = 0
-    except Exception as exc:  # noqa: BLE001 - show any AI/API failure to the user
-        st.session_state.select_error = f"Couldn't look up that character: {exc}"
+    except Exception as exc:  # noqa: BLE001 - sanitize before showing to user
+        st.session_state.candidates = []
+        st.session_state.candidate_idx = 0
+        st.session_state.select_error = _format_user_error(
+            exc, "Couldn't look up that character right now. Please try again."
+        )
     st.rerun()
 
 page_title()
@@ -96,6 +116,7 @@ st.markdown(
 
 fighter_one, versus, fighter_two = st.columns([1, 0.14, 1], gap="small")
 
+
 def render_slot(column, side: str, label: str, role: str, character) -> None:
     is_active = SELECTION_ROLE == role
     mode = "active" if is_active else "locked" if character is not None else "inactive"
@@ -116,7 +137,7 @@ def render_slot(column, side: str, label: str, role: str, character) -> None:
             )
             if character is not None:
                 st.markdown(
-                    f'<div class="slot-state ready"><strong>{html.escape(character.name)}</strong>'
+                    f'<div class="slot-state ready"><strong>{escape_safe_text(character.name)}</strong>'
                     'Selection locked. Ready for the arena.</div>',
                     unsafe_allow_html=True,
                 )
@@ -128,18 +149,24 @@ def render_slot(column, side: str, label: str, role: str, character) -> None:
                 )
             elif st.session_state.candidates:
                 candidates = st.session_state.candidates
-                idx = st.session_state.candidate_idx
+                idx = min(st.session_state.candidate_idx, len(candidates) - 1)
                 current = candidates[idx]
-                candidate_name = html.escape(current["name"])
-                origin = html.escape(current["origin"])
-                prompt = f"{candidate_name} from {origin}?" if origin else f"{candidate_name}?"
+                candidate_name = escape_safe_text(current["name"])
+                origin = escape_safe_text(current["origin"])
+                is_valid_origin = bool(origin and origin != "?")
+                prompt = f"{candidate_name} from {origin}?" if is_valid_origin else f"{candidate_name} (Unverified origin)"
                 st.markdown(
                     f'<div class="selection-prompt"><small>Confirm match {idx + 1} of {len(candidates)}</small>{prompt}</div>',
                     unsafe_allow_html=True,
                 )
                 no_col, yes_col = st.columns(2, gap="small")
                 no_col.button("No", key="btn_no", on_click=_confirm_no)
-                yes_col.button("Yes", key="btn_yes", on_click=_confirm_yes)
+                yes_col.button(
+                    "Yes",
+                    key="btn_yes",
+                    on_click=_confirm_yes,
+                    disabled=not is_valid_origin or st.session_state.confirmed_pick is not None,
+                )
                 hint = "More matches available." if idx + 1 < len(candidates) else "Last available match."
                 st.markdown(f'<div class="step-note">{hint}</div>', unsafe_allow_html=True)
             else:

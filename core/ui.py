@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import re
 from pathlib import Path
 
 import streamlit as st
@@ -15,6 +16,13 @@ SWORDS = "\u2694\ufe0f"                 # crossed swords
 TROPHY = "\U0001F3C6"                   # trophy
 FLASK = "\U0001F9EA"                    # test tube
 SINGER = "\U0001F9D1\u200d\U0001F3A4"   # singer
+
+
+def escape_safe_text(raw: str) -> str:
+    """Neutralize Markdown links/images and escape HTML entities for safe st.markdown rendering."""
+    cleaned = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", str(raw or ""))
+    cleaned = re.sub(r"[\r\n]+", " ", cleaned)
+    return html.escape(cleaned, quote=True)
 
 
 def load_css() -> None:
@@ -69,7 +77,7 @@ def fighter_card(
         f" {'knocked-out' if knocked_out else ''}"
         f" {'victorious' if victorious else ''}"
     )
-    tactics = ", ".join(html.escape(move) for move in char.tactics_used) or "No tactic used"
+    tactics = ", ".join(escape_safe_text(move) for move in char.tactics_used) or "No tactic used"
     rows = [
         ("ATK", f"{char.atk:.1f}", f"{char.atk_pct:.1f}%"),
         ("DEF", f"{char.defense:.1f}", f"{char.def_pct:.1f}%"),
@@ -87,13 +95,13 @@ def fighter_card(
         f'<span class="fighter-index">Fighter {"1" if side == "f1" else "2"}</span>'
         f'<span class="fighter-turn{" " if active else " waiting"}">{turn_label}</span>'
         '</div>'
-        f'<div class="fighter-name">{html.escape(char.name)}</div>'
+        f'<div class="fighter-name">{escape_safe_text(char.name)}</div>'
         f'{hp_bar(char)}'
         f'<div class="stats-grid">{cells}</div>'
         '<div class="tactic-row"><span class="stat-label">TACTIC</span>'
         f'<span class="tactic-value">{tactics}</span></div>'
         '<div class="state-row"><span class="stat-label">STATE</span>'
-        f'<span class="state-value">{html.escape(char.state)}</span></div>'
+        f'<span class="state-value">{escape_safe_text(char.state)}</span></div>'
         '</div>'
     )
 
