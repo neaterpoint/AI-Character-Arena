@@ -8,6 +8,7 @@ Configuration (in .streamlit/secrets.toml or as environment variables):
 from __future__ import annotations
 
 import json
+import math
 import os
 import random
 import re
@@ -32,8 +33,8 @@ _FOCUS_HINTS = {
 # Layer 1: High-risk adversarial injection patterns
 _INJECTION_PATTERNS = re.compile(
     r"(?i)("
-    r"ignore\s+(all\s+)?(previous|prior|above|system)\s+(instructions?|rules?|prompts?|directives?)"
-    r"|disregard\s+(all\s+)?(previous|prior|above|system)"
+    r"ignore\s+(all\s+)?(of\s+)?(the\s+)?(previous|prior|above|earlier|system)\s+(instructions?|rules?|prompts?|directives?)"
+    r"|disregard\s+(all\s+)?(of\s+)?(the\s+)?(previous|prior|above|earlier|system|rules?|instructions?)"
     r"|forget\s+(everything|all\s+rules|your\s+instructions)"
     r"|system\s*:|assistant\s*:|developer\s*:"
     r"|reveal\s+(your\s+)?(system\s+)?(prompt|instructions?|rules?)"
@@ -41,7 +42,7 @@ _INJECTION_PATTERNS = re.compile(
     r"|what\s+is\s+your\s+(system\s+)?prompt"
     r"|act\s+as\s+dan|jailbreak|override\s+(stats?|rules?|schema)"
     r"|\b(atk|atk_pct|defense|def_pct|crit_mult|crit_pct|max_hp)\b\s*[:=]"
-    r"|wins?\s+instantly|instant\s+win|invincible|god\s*mode"
+    r"|wins?\s+instantly|instant\s+win|(is|are|be|become|makes?)\s+invincible|god\s*mode"
     r")"
 )
 
@@ -76,9 +77,12 @@ def is_mock_mode() -> bool:
 
 def _clamp(value, low, high, default):
     try:
-        return max(low, min(high, float(value)))
+        number = float(value)
     except (TypeError, ValueError):
         return default
+    if not math.isfinite(number):   # NaN/inf would otherwise clamp to the maximum
+        return default
+    return max(low, min(high, number))
 
 
 def _sanitize_text(raw: str, max_len: int = MAX_INPUT_LEN) -> str:
@@ -284,8 +288,12 @@ def narrate_action(actor: Character, target: Character, result) -> Narration:
         return _mock_narrate(actor, target, result)
 
     fallback = _mock_narrate(actor, target, result)
+    text = _clean_output_str(data.get("text"), fallback.text, 240, canary)
+    allowed = {str(n) for n in (result.damage, actor.hp, target.hp, actor.max_hp, target.max_hp)}
+    if any(num not in allowed for num in re.findall(r"\d+", text)):
+        text = fallback.text    # the AI may not invent numbers; the engine is the source of truth
     return Narration(
-        text=_clean_output_str(data.get("text"), fallback.text, 240, canary),
+        text=text,
         actor_state=_clean_output_str(data.get("actor_state"), actor.state, 40, canary),
         target_state=_clean_output_str(data.get("target_state"), target.state, 40, canary),
     )
