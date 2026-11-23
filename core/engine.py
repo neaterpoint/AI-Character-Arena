@@ -35,6 +35,7 @@ class ActionResult:
     hit: bool = True
     crit: bool = False
     blocked: bool = False
+    guard: str = ""
     stat: str = ""              # tactic: which chance was boosted ("atk" | "def" | "crit")
     boost: float = 0.0          # tactic: how many percentage points it added
     detail: str = ""            # tactic: name of the move
@@ -45,7 +46,13 @@ def _roll(percent: float) -> bool:
 
 
 def _attack(attacker: Character, defender: Character) -> ActionResult:
-    result = ActionResult(attacker.name, defender.name, "attack")
+    result = ActionResult(
+        attacker.name,
+        defender.name,
+        "attack",
+        detail=random.choice(attacker.attack_moves) if attacker.attack_moves else "a signature strike",
+        guard=defender.active_defense_move if defender.defending else "",
+    )
     if not _roll(attacker.atk_pct):
         result.hit = False
         return result
@@ -91,12 +98,21 @@ def _tactic(actor: Character, target: Character) -> ActionResult:
 
 def perform_action(actor: Character, target: Character, action: str) -> ActionResult:
     actor.defending = False          # a defence only lasts until the actor's next action
+    actor.active_defense_move = ""
     if action == "tactic":
         return _tactic(actor, target)
 
     if action == "defend":
         actor.defending = True
-        result = ActionResult(actor.name, target.name, "defend")
+        actor.active_defense_move = (
+            random.choice(actor.defense_moves) if actor.defense_moves else "a defensive technique"
+        )
+        result = ActionResult(
+            actor.name,
+            target.name,
+            "defend",
+            detail=actor.active_defense_move,
+        )
     else:
         result = _attack(actor, target)
 

@@ -20,6 +20,10 @@ class Character:
     state: str = "Fresh and ready"   # short status text shown in the sidebar
     defending: bool = False
     tactics_used: list[str] = field(default_factory=list)   # recent tactic names (avoids repeats)
+    attack_moves: list[str] = field(default_factory=list)
+    defense_moves: list[str] = field(default_factory=list)
+    tactic_moves: list[str] = field(default_factory=list)
+    active_defense_move: str = ""
 
     @property
     def alive(self) -> bool:

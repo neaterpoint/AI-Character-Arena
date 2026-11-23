@@ -12,20 +12,24 @@ Runs fully offline in **demo mode** if no API key is configured.
 1. **Pick fighters.** Type a character (`Goku`) and the AI offers up to 5
    possible shows/games one at a time (Yes/No). Type `Goku from Dragon Ball`
    to skip the guessing. Fighter 1 (red) is chosen first, then Fighter 2 (blue).
-2. **Stats are generated.** Once you confirm a match, the AI builds lore-based
-   stats: Atk, Def and Crit, each with a power value and a success chance.
+2. **Stats and moves are preloaded.** Once you confirm a match, the AI builds
+   lore-based stats and an attack, defense, and tactic move set before the
+   battle begins. The battle reuses these moves; it does not request a new
+   tactic from the AI each time.
 3. **Fight.** Players alternate turns choosing:
-   - **Attack:** roll to land, then damage with a possible critical hit.
-   - **Defend:** until that fighter's next action, incoming hits that land can
-     be fully blocked (Def chance) and take extra damage reduction.
-   - **Tactic:** a random, lore-accurate move that permanently boosts the
-     chance of Atk, Def or Crit for the rest of the match.
+   - **Attack:** use a preloaded character skill or weapon, roll to land, then
+     calculate damage with a possible critical hit.
+   - **Defend:** establish a preloaded defensive stance in anticipation of the
+     opponent's next attack. It remains active until that fighter's next
+     action, where it may fully block an attack or reduce its damage.
+   - **Tactic:** reuse a preloaded power-up or skill that permanently boosts
+     the chance of Atk, Def or Crit for the rest of the match.
 4. **Win.** Reduce the other fighter to 0 HP. After 50 total actions, sudden
    death knocks out the fighter with less HP.
 
 **Division of labor:** the engine (`core/engine.py`) owns all dice, damage and
-balance numbers. The AI only supplies character origins and stats, battle
-narration, and tactic flavour text. It never decides who wins a roll.
+balance numbers. The AI supplies character origins, stats, preloaded move
+names, and battle narration. It never decides who wins a roll.
 
 ### Combat rules at a glance
 
@@ -34,9 +38,9 @@ narration, and tactic flavour text. It never decides who wins a roll.
 | Starting HP | 100 |
 | Base damage | `atk x 2.5 x random(0.85-1.15)` |
 | Critical hit | Multiplies damage by the fighter's `crit_mult` |
-| Damage reduction | `defense x 0.03` normally, `defense x 0.08` while defending (max 80%) |
+| Damage reduction | `defense x 0.03` normally, `defense x 0.08` while defending (max 80%); defending is prepared before the opponent attacks |
 | Tactic boost | +8 to +15 percentage points (caps: Atk 98%, Def 90%, Crit 75%) |
-| Tactic memory | Last 5 tactics are passed to the AI to avoid repeats |
+| Move reuse | Preloaded attack, defense, and tactic moves remain available throughout the match |
 | Sudden death | At action 50, lower HP loses (tie: the fighter who didn't act loses) |
 
 Balance knobs live at the top of `core/engine.py`.
@@ -81,8 +85,10 @@ template text. A "DEMO MODE" caption shows on the battle screen.
 
 ### How AI responses are requested
 
-All AI access lives in `services/ai_client.py`. There are four calls: origin
-lookup, character stats, battle narration, and tactic generation.
+All AI access lives in `services/ai_client.py`. The app requests character
+origins, character stats plus a preloaded move set, and battle narration.
+Tactics reuse the preloaded move set locally and do not require a separate
+AI request during the match.
 
 - Each call asks for **structured JSON** using a per-call JSON schema
   (`response_format=json_schema`).
@@ -91,8 +97,8 @@ lookup, character stats, battle narration, and tactic generation.
 - Replies are parsed leniently (code fences and stray text are tolerated) and
   stats are clamped to valid ranges in code, so a bad model reply cannot
   produce out-of-range numbers.
-- If narration or tactic generation fails mid-battle, the turn still
-  completes using simple template text. Character lookup and stat-building
+- If narration fails mid-battle, the turn still completes using simple
+  template text with the selected move. Character lookup and stat-building
   failures are shown on the selection screen so the player can retry.
 
 ### Input safety
