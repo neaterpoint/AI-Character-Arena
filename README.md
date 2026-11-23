@@ -98,9 +98,23 @@ lookup, character stats, battle narration, and tactic generation.
 ### Input safety
 
 - Typed names have `<` and `>` stripped and are capped at 80 characters.
+- Empty, symbol-only, and zero-width-only names are rejected. Prompt-control
+  phrases are checked after Unicode normalization, separator removal, common
+  leetspeak/Cyrillic-confusable normalization, and selected multilingual checks.
 - User text is passed to the model as untrusted data, and the prompts tell the
   model not to follow instructions found in it.
+- AI output is length-limited and sanitized; instruction-like output and
+  franchise-name leakage in battle text fall back to local templates. Stat
+  values are finite-checked and clamped, and narration damage numbers are
+  checked against the engine's result.
+- Real-world figures associated with atrocities, extremist movements,
+  terrorism, or notorious violent or sexual crimes are not accepted as
+  fighters; the AI is also instructed to avoid glorifying these harms or
+  demeaning protected groups.
 - Everything rendered into HTML goes through `html.escape`.
+- These are defense-in-depth checks, not a guarantee against every possible
+  prompt-injection phrasing or behavior from an external model. The battle
+  engine remains authoritative for rolls, damage, and win conditions.
 
 ## Project layout
 
@@ -115,7 +129,6 @@ lookup, character stats, battle narration, and tactic generation.
 | `core/ui.py` | HTML/CSS helpers (fighter cards, HP bars) |
 | `services/ai_client.py` | All AI access, JSON schemas, and offline demo mode |
 | `assets/style.css` | Arcade-style theme, animations and victory screen |
-| `docs/qa-plan.md` | QA test plan (security, battle logic, E2E, regression) |
 
 ## Troubleshooting
 
@@ -129,25 +142,11 @@ lookup, character stats, battle narration, and tactic generation.
 
 The core loop (select fighters, battle, victory, rematch) is implemented, and
 the AI JSON handling has been reworked to tolerate providers without schema
-support. Open items, mostly taken from `docs/qa-plan.md` and a read of the code:
-
-- **Unknown characters are not blocked.** If the AI finds no origin, the
-  character proceeds with an empty origin instead of being rejected.
-- **Unusual input is accepted:** emoji-only, zero-width characters and
-  non-Latin text pass the current checks and need a decision.
-- **Rapid repeated "Yes" clicks** on the confirmation step have been reported to
-  raise an `IndexError`.
-- **Raw error text is shown to players** on the selection and battle screens,
-  which could expose provider error details. It should be replaced with
-  friendlier messages.
-- **The QA plan has not been fully executed.** Treat the security
-  (prompt-injection) and stat-scaling phases as the priority before any public
-  deployment.
+support. Novel multilingual prompt-injection phrasing and model-specific
+behavior remain possible.
 
 ## Contributing
 
 - Work on a feature branch and open a pull request into `main`.
 - Do not commit `.streamlit/secrets.toml`, `.venv/` or `.DS_Store`.
 - Keep game numbers in `core/engine.py` and AI calls in `services/ai_client.py`.
-- Re-run the relevant phases of `docs/qa-plan.md` after changing prompts,
-  parsing or the engine.
