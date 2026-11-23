@@ -78,6 +78,18 @@ def fighter_card(
         f" {'victorious' if victorious else ''}"
     )
     tactics = ", ".join(escape_safe_text(move) for move in char.tactics_used) or "No tactic used"
+    arsenal = (
+        ("ATTACKS", char.attack_moves),
+        ("DEFENSE", char.defense_moves),
+        ("TACTICS", char.tactic_moves),
+    )
+    arsenal_rows = "".join(
+        f'<div class="tactic-row"><span class="stat-label">{label}</span>'
+        f'<span class="tactic-value">'
+        f"{', '.join(escape_safe_text(move) for move in moves) or 'Standard move'}"
+        "</span></div>"
+        for label, moves in arsenal
+    )
     rows = [
         ("ATK", f"{char.atk:.1f}", f"{char.atk_pct:.1f}%"),
         ("DEF", f"{char.defense:.1f}", f"{char.def_pct:.1f}%"),
@@ -100,6 +112,7 @@ def fighter_card(
         f'<div class="stats-grid">{cells}</div>'
         '<div class="tactic-row"><span class="stat-label">TACTIC</span>'
         f'<span class="tactic-value">{tactics}</span></div>'
+        f'{arsenal_rows}'
         '<div class="state-row"><span class="stat-label">STATE</span>'
         f'<span class="state-value">{escape_safe_text(char.state)}</span></div>'
         '</div>'
