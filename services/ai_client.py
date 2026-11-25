@@ -46,6 +46,21 @@ _CONFUSABLES = str.maketrans({
     "н": "h", "ј": "j", "ѕ": "s", "ԁ": "d", "ԛ": "q",
     "０": "0", "１": "1", "３": "3", "４": "4", "５": "5", "７": "7",
 })
+
+
+# ============================ configuration ================================
+def _setting(name: str, default: str | None = None) -> str | None:
+    """Read a setting from .streamlit/secrets.toml, then the environment."""
+    value = None
+    try:
+        value = st.secrets.get(name)
+    except Exception:  # no secrets.toml available
+        pass
+    value = value or os.getenv(name)
+    value = str(value).strip() if value else ""
+    return value or default
+
+
 def _get_sensitive_figures() -> tuple[str, ...]:
     """Load sensitive figure names from config (secrets.toml or env). Falls back to built-in list."""
     raw = _setting("SENSITIVE_FIGURES", "")
@@ -65,6 +80,14 @@ def _get_sensitive_figures() -> tuple[str, ...]:
 
 
 _SENSITIVE_FIGURE_NAMES = _get_sensitive_figures()
+
+
+def reload_sensitive_figures() -> None:
+    """Reload sensitive figure names from config (useful for live config updates without restart)."""
+    global _SENSITIVE_FIGURE_NAMES
+    _SENSITIVE_FIGURE_NAMES = _get_sensitive_figures()
+
+
 _CONTENT_SAFETY_RULE = (
     "Keep descriptions and flavor respectful. Do not praise or trivialize genocide, mass atrocities, "
     "extremist movements, terrorism, or notorious violent or sexual crimes. Do not use slurs or demean "
@@ -74,12 +97,12 @@ _CONTENT_SAFETY_RULE = (
 _LEETSPEAK = str.maketrans({"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t"})
 _COMPACT_INJECTION_PATTERNS = re.compile(
     r"("
-    r"(?:ignore|disregard|forget)(?:all|of|the|your|previous|prior|above|earlier|system|"
+    r"(?:ignore|disregard|forget)(?:all|of|your|previous|prior|above|earlier|system|"
     r"instructions?|rules?|prompts?|directives?)+"
     r"|(?:new|updated|special)instructions?"
     r"|(?:youarenow|actas|pretendtobe|roleplayas)"
     r"|(?:reveal|repeat|print|show)(?:your|the|system|hidden|developer|instructions?|rules?|prompt)+"
-    r"|(?:give|set|make|return)(?:him|her|me|the|my|their|all|maximum|stats?|atk|atk_pct|"
+    r"|(?:give|set|make|return)(?:him|her|me|my|their|all|maximum|stats?|atk|atk_pct|"
     r"defense|def_pct|crit_mult|crit_pct|max_hp|to|=|\d)+"
     r"|(?:atk|atk_pct|defense|def_pct|crit_mult|crit_pct|max_hp)(?:to|=|\d)"
     r"|systemprompt|developerprompt|assistantprompt"
@@ -173,7 +196,7 @@ def _mentions_origin(text: str, *origins: str) -> bool:
     for origin in origins:
         normalized_origin = unicodedata.normalize("NFKC", origin or "").casefold()
         letters = "".join(char for char in normalized_origin if char.isalnum())
-        if len(letters) < 4:
+        if not letters:
             continue
         pattern = r"(?<!\w)" + r"[\W_]*".join(map(re.escape, letters)) + r"(?!\w)"
         if re.search(pattern, normalized_text, flags=re.UNICODE):
@@ -197,14 +220,20 @@ def _clean_move_pool(raw, fallback: list[str], name: str, origin: str) -> list[s
     for item in raw:
         if not isinstance(item, str):
             continue
-        move = _safe_ai_text(item, "", 60, "", name, origin)
+        move = _clean_output_str(item, "", 60, "")
+        if not move:
+            continue
         key = move.casefold()
-        if move and key not in seen:
+        if key not in seen:
             seen.add(key)
             moves.append(move)
         if len(moves) == 4:
             break
-    return moves or fallback
+    if not moves:
+        return fallback
+    # Final safety: strip any move that mentions origin/name (defense in depth)
+    safe_moves = [m for m in moves if not _mentions_origin(m, name, origin)]
+    return safe_moves if safe_moves else fallback
 
 
 def _mentions_move(text: str, move: str) -> bool:
@@ -503,11 +532,17 @@ def narrate_action(actor: Character, target: Character, result) -> Narration:
 
 
 def generate_tactic(actor: Character, target: Character, stat: str) -> TacticOutcome:
-    """Reuse a preloaded character tactic; the engine alone chooses its numeric effect."""
-    move = random.choice(actor.tactic_moves) if actor.tactic_moves else _mock_tactic(actor, stat).move
+    """Reuse a preloaded character tactic; the engine alone chooses its numeric effect.
+    Avoids repeating recent tactics by checking actor.tactics_used."""
+    available_moves = [m for m in actor.tactic_moves if m not in actor.tactics_used] if actor.tactic_moves else []
+    if not available_moves:
+        available_moves = actor.tactic_moves or [_mock_tactic(actor, stat).move]
+    move = random.choice(available_moves)
     return TacticOutcome(
         text=f"{actor.name} uses {move} to improve {stat}.",
         move=move,
+        actor_state=actor.state,
+        target_state=target.state,
     )
 
 
