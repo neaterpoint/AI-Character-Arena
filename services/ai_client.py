@@ -46,14 +46,25 @@ _CONFUSABLES = str.maketrans({
     "н": "h", "ј": "j", "ѕ": "s", "ԁ": "d", "ԛ": "q",
     "０": "0", "１": "1", "３": "3", "４": "4", "５": "5", "７": "7",
 })
-_SENSITIVE_FIGURE_NAMES = (
-    "hitler",
-    "adolf hitler",
-    "stalin",
-    "joseph stalin",
-    "epstein",
-    "jeffrey epstein",
-)
+def _get_sensitive_figures() -> tuple[str, ...]:
+    """Load sensitive figure names from config (secrets.toml or env). Falls back to built-in list."""
+    raw = _setting("SENSITIVE_FIGURES", "")
+    if raw:
+        parsed = tuple(name.strip().lower() for name in raw.split(",") if name.strip())
+        if parsed:
+            return parsed
+    # Fallback built-in list (kept minimal; config should be primary)
+    return (
+        "hitler",
+        "adolf hitler",
+        "stalin",
+        "joseph stalin",
+        "epstein",
+        "jeffrey epstein",
+    )
+
+
+_SENSITIVE_FIGURE_NAMES = _get_sensitive_figures()
 _CONTENT_SAFETY_RULE = (
     "Keep descriptions and flavor respectful. Do not praise or trivialize genocide, mass atrocities, "
     "extremist movements, terrorism, or notorious violent or sexual crimes. Do not use slurs or demean "
